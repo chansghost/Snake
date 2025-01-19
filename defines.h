@@ -48,3 +48,8 @@
 
 #define SNAKE_SIZE 25
 
+#define QUIT 1
+#define NEW_GAME 2
+#define LOST 3
+#define PLAY 0
+

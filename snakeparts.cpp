@@ -78,18 +78,6 @@ const bool SnakePart::getSize() {
 	return size;
 }
 
-void SnakePart::setPositionChange(double x,double y) {
-	position_changeX = x;
-	position_changeY = y;
-}
-
-const double SnakePart::getPosCX(){
-	return position_changeX;
-}
-
-const double SnakePart::getPosCY() {
-	return position_changeY;
-}
 
 void SnakePart::setSize(bool newsize) {
 	size = newsize;
@@ -103,21 +91,6 @@ int SnakePart::getNumber() {
 	return segment_number;
 }
 
-Turn_coords* SnakePart::getTurn() {
-	return made_turn;
-}
-
-void SnakePart::setTurn(Turn_coords*turn) {
-	made_turn = turn;
-}
-
-Turn_coords* SnakePart::getNextTurn() {
-	return next_turn;
-}
-
-void SnakePart::setNextTurn(Turn_coords* turn) {
-	next_turn = turn;
-}
 
 SnakePart::~SnakePart() {
 	SDL_DestroyTexture(bodysprite);

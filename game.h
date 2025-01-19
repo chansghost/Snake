@@ -15,6 +15,7 @@ public:
 
 	void save();
 	void load();
+	void gameplay();
 
 	
 	
@@ -44,4 +45,8 @@ private:
 	void load_dot(FILE* file, bool blue);
 	void saveRanking(const char* filename, ScoreEntry* ranking, int count);
 	void updateRanking(int playerScore);
+
+	int key_management();
+
+	void red_dot_management();
 };

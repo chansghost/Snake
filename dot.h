@@ -8,7 +8,7 @@ public:
 	Dot(bool blue, SDL_Renderer* renderer);
 	~Dot();
 	
-	void pulsate_dot();
+	
 
 	const int getx();
 	const int gety();
@@ -39,5 +39,7 @@ protected:
 	int spawn_time = 0;
 	double scale=1;
 	bool spawned = false;
+
+	void pulsate_dot();
 
 };

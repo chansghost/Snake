@@ -16,6 +16,7 @@ int main(int argc, char **argv) {
 	srand(time(NULL));
 	Game *game = new Game();
 	game->start_game();
+	game->gameplay();
 	delete game;
 	return 0;
 	};

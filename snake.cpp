@@ -4,7 +4,6 @@
 Snake::Snake(int part_size, SDL_Renderer* renderer) : part_size(part_size), renderer(renderer){
 	SDL_Surface* temp_head = SDL_LoadBMP("./head_up.bmp");
 	SDL_Surface* temp_tail = SDL_LoadBMP("./tail_up.bmp");
-	//SDL_Surface* temp_small_body_part = SDL_LoadBMP("./small_body_part.bmp");
 	
 	headsprite = SDL_CreateTextureFromSurface(renderer, temp_head);
 	tailsprite = SDL_CreateTextureFromSurface(renderer, temp_tail);
@@ -12,34 +11,22 @@ Snake::Snake(int part_size, SDL_Renderer* renderer) : part_size(part_size), rend
 		printf("Error loading sprites: snake %s\n", SDL_GetError());
 		exit(1);
 	}
-	//SDL_Texture* small_body_part = SDL_CreateTextureFromSurface(renderer, temp_small_body_part);
 	
 	SDL_FreeSurface(temp_head);
 	SDL_FreeSurface(temp_tail);
-	//SDL_FreeSurface(temp_small_body_part);
 	
 	head = new SnakePart(SCREEN_WIDTH/2, SCREEN_HEIGHT / 2,0,0, headsprite);
 	head->setNumber(0);
 	
-	head->setPositionChange(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2);
 	tail = new SnakePart(SCREEN_WIDTH / 2, part_size+(SCREEN_HEIGHT / 2), 0,0, tailsprite);
-	tail->setPositionChange(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2);
-	//SnakePart* body1 = new SnakePart(200, 400, 0,0, small_body_part);
+	
 	head->setNext(tail);
 	tail->setPrev(head);
 	tail->setNumber(1);
 
-	
-
-	head->setNextTurn(head_node);
-	tail->setNextTurn(head_node);
-	head->setTurn(head_node);
-	tail->setTurn(head_node);
 	for (int i = 0; i < DEFAULT_BODY_LENGTH; i++) {
 		addPart();
 	}
-
-	
 }
 
 SDL_Texture* Snake::getHeadSprite() {
@@ -70,8 +57,7 @@ void Snake::addPart() {
 	SnakePart* new_body_part = new SnakePart(tail->getx(), tail->gety(),
 		tail->getDirection(), tail->getAngle(), bodypart);
 
-	new_body_part->setPositionChange(temp->getPosCX(), temp->getPosCY()); //each item of the
-	//linked list has to have position of the head
+	
 	new_body_part->setNumber(temp->getNumber() + 1);
 
 	tail->setNumber(new_body_part->getNumber() + 1);
@@ -80,8 +66,7 @@ void Snake::addPart() {
 
 	temp->setNext(new_body_part);
 
-	new_body_part->setTurn(temp->getTurn());
-	new_body_part->setNextTurn(temp->getNextTurn());
+	
 
 	new_body_part->setPrev(temp);
 	new_body_part->setNext(tail);
@@ -105,7 +90,6 @@ void Snake::removePart() {
 
 		tail->setDirection(temp->getDirection());
 		tail->setAngle(temp->getAngle());
-		tail->setPositionChange(temp->getPosCX(), temp->getPosCY());
 		tail->setNumber(tail->getNumber() - 1);
 
 		delete temp;
@@ -172,7 +156,6 @@ void Snake::move_snake() {
 						current->setY(turn->y);
 
 						current->setDirection(turn->direction);
-						current->setPositionChange(turn->x, turn->y);
 						turn->remaining -= 1;
 						//printf("Made Turn. Segment: %d\n", current->getNumber());
 						if (turn != nullptr && turn->remaining == 0) {
@@ -257,7 +240,7 @@ void Snake::handle_direction(int dir) {
 				temp->next = new_node;
 			}
 
-			head->setPositionChange(head->getx(), head->gety());
+			
 			head->setDirection(dir);
 		}
 	}
@@ -273,7 +256,7 @@ int Snake::detect_Yborders() {
 	else if (head->gety() <= BORDER_UP) return UP;
 	return -1;
 }
-//wrocic tu kiedys
+
 void Snake::detect_borders() {
 	int Yborder = detect_Yborders(); 
 	int Xborder = detect_Xborders(); 
@@ -301,7 +284,7 @@ void Snake::detect_borders() {
 	}
 }
 
-bool Snake::detect_self_collision() {
+int Snake::detect_self_collision() {
 	SnakePart* current = head->getnext();
 	current = current->getnext();//segments usually cover each other a little bit, 
 	//so we skip checking the segment that is right after the head
@@ -319,18 +302,15 @@ bool Snake::detect_self_collision() {
 		//point to the middle of it
 		fieldY = y_segment - part_size / 2;
 		if (headX > fieldX && headX<(fieldX + part_size) && headY>fieldY && headY < (fieldY + part_size)) {
-			return true;
+			return LOST;
 		}
 		current = current->getnext();
 	}
-	return false;
+	return PLAY;
 }
 
 void Snake::render() {
 
-	//ui->DrawSurface(screen, head->getSprite(), head->getx(), head->gety());
-	//SDL_UpdateWindowSurface(window);
-	//std::cout << "Head position: x=" << head->getx() << ", y=" << head->gety() << std::endl;
 	SnakePart* current = head;
 	while (current != nullptr) {
 		SDL_Rect dest_rect = {
@@ -343,14 +323,13 @@ void Snake::render() {
 		SDL_RenderCopyEx(
 			renderer,
 			current->getSprite(),
-			NULL,            // Wyciêcie z tekstury (NULL = ca³oœæ)
-			&dest_rect,      // Prostok¹t docelowy
-			current->getAngle(),// K¹t obrotu
-			NULL,            // Punkt obrotu (NULL = œrodek)
-			SDL_FLIP_NONE    // Brak odwrócenia
+			NULL,            
+			&dest_rect,     
+			current->getAngle(),
+			NULL,            
+			SDL_FLIP_NONE    
 		);
 		current = current->getnext();
-		//SDL_RenderPresent(rendererr);
 	}
 }
 
@@ -412,24 +391,20 @@ void Snake::check_for_dots(Dot* blue, Dot* red) {
 			red->setSpawned(false);
 			red->setTime();
 			random = rand() % 2;
-			if (random==REMOVE) {
-				printf("%d segments removed.\n" , REMOVE_AMOUNT);
+			if (random == REMOVE) {
+				printf("%d segments removed.\n", REMOVE_AMOUNT);
 				for (int i = 0; i < REMOVE_AMOUNT; i++) {
-					
 					removePart();
-					
 				}
 
 			}
-			else{
-				
+			else {
+
 				slowdown();
 			}
 			points += RED_POINTS;
 		}
 	}
-	
-
 }
 
 SnakePart* Snake::getHead() {

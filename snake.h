@@ -11,7 +11,7 @@ public:
 	~Snake();
 	void render();
 
-	bool detect_self_collision();
+	int detect_self_collision();
 
 	void check_for_dots(Dot*blue,Dot*red);
 

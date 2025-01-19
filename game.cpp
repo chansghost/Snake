@@ -6,119 +6,115 @@ Game::Game() {
 }
 
 void Game::start_game() {
-	ui = new UI();
-	Uint32 last_keypress_time = 0;
 	
-	int t2;
-	double delta;
-	int quit=0;
-	bool lost = false;
-	bool new_game = 0;
-
-	int t1 = SDL_GetTicks();
+	ui = new UI();
 	blue_dot = new Dot(BLUE, ui->getRenderer());
 	red_dot = new Dot(RED, ui->getRenderer());
-	
 	snake = new Snake(SNAKE_SIZE, ui->getRenderer());
-	while (!quit) {
-		t2 = SDL_GetTicks();
+	
+	
+}
 
+void Game::gameplay() {
+	int t2;
+	double delta;
+	int game_state = 0;
+	int t1 = SDL_GetTicks();
+	while (game_state == PLAY) {
+		t2 = SDL_GetTicks();
 		delta = (t2 - t1) * 0.001;
 		t1 = t2;
 		last_speed_up += delta;
 		last_spawn += delta;
 		worldTime += delta;
 
-		
-
-		ui->draw_UI(worldTime,snake->getPoints(),last_spawn,red_dot->getTime(), red_dot->getSpawned());
+		ui->draw_UI(worldTime, snake->getPoints(), last_spawn, red_dot->getTime(), red_dot->getSpawned());
 
 		blue_dot->render(SDL_GetTicks());
-		
-		if (!red_dot->getSpawned() && last_spawn >= red_dot->getTime()) {
-			
-			red_dot->spawn();
-			red_dot->setSpawned(true);
-			last_spawn = 0; 
-		}
 
-		
-		if (red_dot->getSpawned()) {
-			red_dot->render(SDL_GetTicks());
+		red_dot_management();
 
-			
-			if (last_spawn >= RED_LIFETIME) {
-				
-				red_dot->setSpawned(false);
-				last_spawn = 0; 
-				red_dot->setTime(); 
-			}
-		}
-		
 		snake->render();
 		SDL_RenderPresent(ui->getRenderer());
-		while (SDL_PollEvent(&event)) {
-			switch (event.type) {
-			case SDL_KEYDOWN:
-				if (SDL_GetTicks() - last_keypress_time >= cooldown) {
-					last_keypress_time = SDL_GetTicks();
-					if (event.key.keysym.sym == SDLK_ESCAPE) {
-						quit = true;
-					}
-					else if (event.key.keysym.sym == SDLK_UP) {
-						snake->handle_direction(UP);
-					}
-					else if (event.key.keysym.sym == SDLK_DOWN) {
-						snake->handle_direction(DOWN);
-					}
-					else if (event.key.keysym.sym == SDLK_LEFT) {
-						snake->handle_direction(LEFT);
-					}
-					else if (event.key.keysym.sym == SDLK_RIGHT) {
-						snake->handle_direction(RIGHT);
-					}
-					
-				}
-				if (event.key.keysym.sym == SDLK_n) {
-					new_game = true;
-					quit = true;
-				}
-				else if (event.key.keysym.sym == SDLK_s) {
-					save();
-				}
-				else if (event.key.keysym.sym == SDLK_l) {
-					load();
-				}
-				break;
-
-			case SDL_QUIT:
-				quit = true;
-				break;
-			}
 
 
-		}
 		snake->check_for_dots(blue_dot, red_dot);
-		//Sleep(500);
+
 		snake->update();
-		
-		lost = snake->detect_self_collision();
-		if (lost) quit = true;
-		//snake.render(screen, ui,window);
+		game_state = key_management();
+		if (game_state == PLAY)
+		{
+			game_state = snake->detect_self_collision();
+		}
 		if (last_speed_up > SPEED_UP_TIME) {
 			snake->speedup();
 			last_speed_up = 0;
 		}
 	};
-	quit = false;
 	updateRanking(snake->getPoints());
-	
-	
-	if (new_game) restart();
-	if (lost) game_lost();
-	
-	
-	
+	if (game_state == NEW_GAME) restart();
+	if (game_state == LOST) game_lost();
+}
+
+int Game::key_management() {
+	int quit, new_game;
+	while (SDL_PollEvent(&event)) {
+		switch (event.type) {
+		case SDL_KEYDOWN:
+			if (event.key.keysym.sym == SDLK_ESCAPE) {
+				return QUIT;
+			}
+			else if (event.key.keysym.sym == SDLK_UP) {
+				snake->handle_direction(UP);
+			}
+			else if (event.key.keysym.sym == SDLK_DOWN) {
+				snake->handle_direction(DOWN);
+			}
+			else if (event.key.keysym.sym == SDLK_LEFT) {
+				snake->handle_direction(LEFT);
+			}
+			else if (event.key.keysym.sym == SDLK_RIGHT) {
+				snake->handle_direction(RIGHT);
+			}
+			if (event.key.keysym.sym == SDLK_n) {
+				return NEW_GAME;
+			}
+			else if (event.key.keysym.sym == SDLK_s) {
+				save();
+			}
+			else if (event.key.keysym.sym == SDLK_l) {
+				load();
+			}
+			break;
+
+		case SDL_QUIT:
+			return QUIT;
+		}
+	}
+	return PLAY;
+}
+
+
+void Game::red_dot_management() {
+	if (!red_dot->getSpawned() && last_spawn >= red_dot->getTime()) {
+
+		red_dot->spawn();
+		red_dot->setSpawned(true);
+		last_spawn = 0;
+	}
+
+
+	if (red_dot->getSpawned()) {
+		red_dot->render(SDL_GetTicks());
+
+
+		if (last_spawn >= RED_LIFETIME) {
+
+			red_dot->setSpawned(false);
+			last_spawn = 0;
+			red_dot->setTime();
+		}
+	}
 }
 
 void Game::game_lost() {
@@ -148,13 +144,15 @@ void Game::game_lost() {
 	}
 
 	if (restart_game) {
-		restart(); // Uruchom now¹ grê
+		restart(); 
 	}
 }
 void Game::restart() {
 	delete snake;
 	delete ui;
+	worldTime = 0;
 	start_game();
+	gameplay();
 }
 
 void Game::save() {
@@ -339,7 +337,7 @@ void Game::load_dot(FILE* file, bool blue) {
 	fread(&spawn_time, sizeof(spawn_time), 1, file);
 	fread(&spawned, sizeof(spawned), 1, file);
 	
-	// Read position and scale
+	
 	
 	dot->setTime(spawn_time);
 	dot->setSpawned(spawned);
@@ -452,7 +450,7 @@ void Game::load() {
 		return;
 	}
 
-	// Odczyt g³ównych zmiennych gry
+	
 	fread(&worldTime, sizeof(worldTime), 1, file);
 	fread(&last_spawn, sizeof(last_spawn), 1, file);
 	fread(&last_speed_up, sizeof(last_speed_up), 1, file);

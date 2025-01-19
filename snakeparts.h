@@ -29,23 +29,11 @@ public:
 	const bool getSize();
 	void setSize(bool newsize);
 
-	void setPositionChange(double x, double y);
-
-
-	const double getPosCX();
-	const double getPosCY();
 
 	void setNumber(int number);
 
 	int getNumber();
 
-	Turn_coords* getTurn();
-
-	void setTurn(Turn_coords*turn);
-
-	void setNextTurn(Turn_coords* turn);
-
-	Turn_coords* getNextTurn();
 
 private:
 	double x, y;
@@ -56,8 +44,5 @@ private:
 	SnakePart* next=nullptr;
 	SnakePart* prev = nullptr;
 	int segment_number = 0;
-	double position_changeX, position_changeY;  //variables needed for
-	//making the snake turn
-	Turn_coords* made_turn=nullptr;//do we really need pointers
-	Turn_coords* next_turn=nullptr;
+
 };
