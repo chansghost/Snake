@@ -131,13 +131,13 @@ void Snake::move_part(SnakePart* part) {
 	
 }
 
-void Snake::move_snake() {
+void Snake::move_snake(Turn_coords** new_coords_head,bool tp) {
 	SnakePart* current = head->getnext();
-	Turn_coords* turn=head_node;
+	Turn_coords* turn = *new_coords_head;
 	int done = 0;
 	
 	while (current != nullptr) {
-		turn = head_node;
+		turn = *new_coords_head;
 		if (turn != nullptr) {
 			done = tail->getNumber() - turn->remaining;
 			while (current->getNumber() < done) {
@@ -151,27 +151,36 @@ void Snake::move_snake() {
 			if(abs(current->getx() - turn->x) <= speed) {
 				if (abs(current->gety() - turn->y) <= speed) {
 					if( current->getDirection() != turn->direction) {
-
-						current->setX(turn->x);
-						current->setY(turn->y);
+						if (*new_coords_head!=head_node_tp) {
+							current->setX(turn->x);
+							current->setY(turn->y);
+						}
+						else {
+							current->setX(turn->tp_x);
+							current->setY(turn->tp_y);
+						}
 
 						current->setDirection(turn->direction);
 						turn->remaining -= 1;
 						//printf("Made Turn. Segment: %d\n", current->getNumber());
 						if (turn != nullptr && turn->remaining == 0) {
-							head_node = turn->next;
+							*new_coords_head = turn->next;
+							
 							delete turn;
 						}
 					}
 				}
 			}
-			even();
+			if(!tp) even(); //even out the position of the head, so that
+			//the body doesn't move onto it from the bigger tolerance of detecting turning point
+			
 		}
-		if (head_node == nullptr && pending_speed > 0) {
+		if (*new_coords_head == nullptr && pending_speed > 0) {
 			speed = pending_speed;
 			pending_speed = 0;
 		}
-		move_part(current);
+		if(!tp) move_part(current);
+		
 
 		current = current->getnext();
 	}
@@ -198,7 +207,7 @@ void Snake::even() {
 }
 	
 void Snake::update_remaining(bool add_remove) {
-	Turn_coords* temp = head_node;
+	Turn_coords* temp = head_node_turn;
 	if (add_remove == ADD) {
 		while (temp != nullptr) {
 			temp->remaining += 1;
@@ -217,9 +226,30 @@ void Snake::update_remaining(bool add_remove) {
 void Snake::update() {
 	
 	move_part(head);
-	move_snake();
+	move_snake(&head_node_turn,false);
+	move_snake(&head_node_tp,true);
 	
 	detect_borders();
+}
+
+void Snake::update_coords_list(Turn_coords** new_coords_head, int direction, double x, double y) {
+	Turn_coords* new_node= new Turn_coords(head->getx(), head->gety(), direction, tail->getNumber(), speed);;
+	if (x != -1 && y != -1) {
+		new_node->setTP(x, y); //setting the coords we need to teleport to
+	}
+	
+	Turn_coords* temp = *new_coords_head;
+	if (*new_coords_head == nullptr) {
+		*new_coords_head = new_node;
+	}
+
+	else {
+		while (temp->next != nullptr) {
+			temp = temp->next;
+		}
+		temp->next = new_node;
+	}
+	head->setDirection(direction);
 }
 
 void Snake::handle_direction(int dir) {
@@ -227,21 +257,10 @@ void Snake::handle_direction(int dir) {
 		if (abs(dir - head->getDirection()) != 1) {
 			//if the directions are opposites (check defines.h)
 			//saving coords of new turn
-			Turn_coords* new_node = new Turn_coords(head->getx(), head->gety(), dir, tail->getNumber(), speed);
-			Turn_coords* temp = head_node;
-			if (head_node == nullptr) {
-				head_node = new_node;
-			}
-			
-			else {
-				while (temp->next != nullptr) {
-					temp = temp->next;
-				}
-				temp->next = new_node;
-			}
+			update_coords_list(&head_node_turn, dir);
 
 			
-			head->setDirection(dir);
+			
 		}
 	}
 }
@@ -353,7 +372,7 @@ int Snake::getPoints() {
 }
 
 void Snake::speedup() {
-	if (head_node != nullptr) {
+	if (head_node_turn != nullptr) {
 		pending_speed = speed*SPEED_UP;
 	}
 	else {
@@ -363,7 +382,7 @@ void Snake::speedup() {
 }
 
 void Snake::slowdown() {
-	if (head_node != nullptr) {
+	if (head_node_turn != nullptr) {
 		pending_speed = speed * SLOW_DOWN;
 	}
 	else {
@@ -372,7 +391,16 @@ void Snake::slowdown() {
 	printf("Snake has slowed down!\n");
 }
 
-void Snake::check_for_dots(Dot* blue, Dot* red) {
+void Snake::teleport_head() {
+	int x = head_node_tp->tp_x;
+	int y = head_node_tp->tp_y;
+	//moving head to the location of the corresponding portal
+	//int dir = head->getDirection();
+	head->setX(x);
+	head->setY(y);
+}
+
+void Snake::check_for_dots(Dot* blue, Dot* red,Portal** portals) {
 	int x = blue->getx();
 	int y = blue->gety();
 	int random;
@@ -405,6 +433,41 @@ void Snake::check_for_dots(Dot* blue, Dot* red) {
 			points += RED_POINTS;
 		}
 	}
+	for (int i = 0; i < TP_NUMBER*2; i++) {
+		x = portals[i]->getx();
+		y = portals[i]->gety();
+		Portal* second_port=nullptr;
+		int dir = -1;
+		int number = portals[i]->get_portal_nr();
+		if (check_dot(x, y)) {
+			
+			if ((i != 0 && portals[i - 1]->get_portal_nr() == number)) {
+				//get x,y
+				second_port = portals[i - 1];
+				
+				
+			}
+			else if((i + 1) != TP_NUMBER * 2 && portals[i + 1]->get_portal_nr() == number)
+			{
+				second_port = portals[i + 1];
+			}
+			x = second_port->getx();
+			y = second_port->gety();
+
+			
+			if (head->getDirection() == LEFT || head->getDirection() == DOWN) {
+				dir = (head->getDirection() - 1); //opposite direction, check defines.h for explanation
+			}
+			else { dir = head->getDirection() + 1; }
+
+			update_coords_list(&head_node_tp, dir,x,y);
+			teleport_head();
+			portals[i]->spawn();
+			second_port->spawn();
+
+			
+		}
+	}
 }
 
 SnakePart* Snake::getHead() {
@@ -420,11 +483,11 @@ void Snake::setTail(SnakePart* part) {
 }
 
 Turn_coords* Snake::getTurn() {
-	return head_node;
+	return head_node_turn;
 }
 
 void Snake::setTurn(Turn_coords* turn) {
-	head_node = turn;
+	head_node_turn = turn;
 }
 
 double Snake::getSpeed() {
@@ -462,8 +525,8 @@ Snake::~Snake() {
 	}
 	delete temp;
 	
-	if (head_node != nullptr) {
-		Turn_coords* turntemp = head_node;
+	if (head_node_turn != nullptr) {
+		Turn_coords* turntemp = head_node_turn;
 		while (turntemp->next != nullptr) {
 			Turn_coords* turntemp2 = turntemp->next;
 			delete turntemp;

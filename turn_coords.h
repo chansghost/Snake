@@ -2,6 +2,7 @@
 
 struct Turn_coords {
 	double x = -1, y = -1;
+	double tp_x = -1, tp_y = -1;
 	int direction = -1;
 	int remaining = 0;
 	double speed=0.5;
@@ -14,6 +15,11 @@ struct Turn_coords {
 		this->speed = speed;
 
 	};
+	void setTP(double tpx, double tpy) {
+		this->tp_x = tpx;
+		this->tp_y = tpy;
+
+	}
 	Turn_coords() {
 	};
 

@@ -53,3 +53,6 @@
 #define LOST 3
 #define PLAY 0
 
+#define TP_NUMBER 2
+
+

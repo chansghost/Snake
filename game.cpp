@@ -1,5 +1,4 @@
 #include "game.h"
-#include <windows.h>
 
 Game::Game() {
 	
@@ -11,7 +10,13 @@ void Game::start_game() {
 	blue_dot = new Dot(BLUE, ui->getRenderer());
 	red_dot = new Dot(RED, ui->getRenderer());
 	snake = new Snake(SNAKE_SIZE, ui->getRenderer());
-	
+	Portal* portal;
+	int p_number=1;
+	for (int i = 0; i < TP_NUMBER*2; i++) {
+		portal = new Portal(i, ui->getRenderer(), p_number);
+		if (i % 2 == 1) p_number++;
+		portals[i] = portal;
+	}
 	
 }
 
@@ -30,15 +35,20 @@ void Game::gameplay() {
 
 		ui->draw_UI(worldTime, snake->getPoints(), last_spawn, red_dot->getTime(), red_dot->getSpawned());
 
+		ui->Draw_portal_numbers(portals);
+		for (int i = 0; i < TP_NUMBER * 2; i++) {
+			portals[i]->render(SDL_GetTicks());
+			
+		}
 		blue_dot->render(SDL_GetTicks());
-
+		
 		red_dot_management();
 
 		snake->render();
+		
+		
 		SDL_RenderPresent(ui->getRenderer());
-
-
-		snake->check_for_dots(blue_dot, red_dot);
+		snake->check_for_dots(blue_dot, red_dot, portals);
 
 		snake->update();
 		game_state = key_management();
@@ -168,6 +178,7 @@ void Game::save() {
 	save_turns(file);
 	save_dot(file, BLUE);
 	save_dot(file, RED);
+	save_portals(file);
 	fclose(file);
 	printf("Game saved successfully.\n");
 
@@ -225,7 +236,13 @@ void Game::save_turns(FILE* file) {
 }
 
 void Game::save_dot(FILE* file, bool blue) {
-	Dot* dot = blue ? blue_dot : red_dot;
+	Dot* dot;
+	if (blue) {
+		dot = blue_dot;
+	}
+	else {
+		dot = red_dot;
+	}
 	int x = dot->getx();
 	int y = dot->gety();
 	double scale = dot->getScale();
@@ -243,6 +260,48 @@ void Game::save_dot(FILE* file, bool blue) {
 	printf("Saving Dot: x=%d, y=%d, scale=%f\n", x, y, scale);
 }
 
+void Game::save_portals(FILE* file) {
+	int count = TP_NUMBER * 2;
+	fwrite(&count, sizeof(count), 1, file);
+	for (int i = 0; i < TP_NUMBER * 2; i++) {
+		int x = portals[i]->getx();
+		int y = portals[i]->gety();
+		double scale = portals[i]->getScale();
+		int portal_number = portals[i]->get_portal_nr();
+
+		fwrite(&x, sizeof(x), 1, file);
+		fwrite(&y, sizeof(y), 1, file);
+		fwrite(&scale, sizeof(scale), 1, file);
+		fwrite(&portal_number, sizeof(portal_number), 1, file);
+	}
+}
+void Game::load_portals(FILE* file) {
+	int count;
+	fread(&count, sizeof(count), 1, file);
+
+	if (count != TP_NUMBER * 2) {
+		printf("Error: Unexpected number of portals in save file.\n");
+		return;
+	}
+
+	for (int i = 0; i < TP_NUMBER * 2; i++) {
+		int x, y, portal_number;
+		double scale;
+
+		fread(&x, sizeof(x), 1, file);
+		fread(&y, sizeof(y), 1, file);
+		fread(&scale, sizeof(scale), 1, file);
+		fread(&portal_number, sizeof(portal_number), 1, file);
+
+		if (portals[i] == nullptr) {
+			portals[i] = new Portal(portal_number, ui->getRenderer(), portal_number);
+		}
+
+		portals[i]->setPos(x, y);
+		portals[i]->setScale(scale);
+		portals[i]->set_portal_nr(portal_number);
+	}
+}
 
 
 void Game::load_snake(FILE* file) {
@@ -439,16 +498,23 @@ void Game::updateRanking(int playerScore) {
 }
 
 void Game::load() {
+	FILE* file = fopen("snake.dat", "rb");
+	if (!file) {
+		perror("No saved game detected.");
+		return;
+	}
 	delete ui;
 	delete snake;
 	delete blue_dot;
 	delete red_dot;
-	ui = new UI();
-	FILE* file = fopen("snake.dat", "rb");
-	if (!file) {
-		perror("Failed to open file");
-		return;
+	Portal* temp_portal;
+	for (int i = 0; i < TP_NUMBER * 2; i++) {
+		temp_portal = portals[i];
+		delete temp_portal;
+		portals[i] = nullptr;
 	}
+	ui = new UI();
+	
 
 	
 	fread(&worldTime, sizeof(worldTime), 1, file);
@@ -459,6 +525,7 @@ void Game::load() {
 	load_turns(file);
 	load_dot(file, BLUE);  
 	load_dot(file, RED); 
+	load_portals(file);
 
 	fclose(file);
 	printf("Game loaded successfully.\n");

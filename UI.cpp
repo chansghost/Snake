@@ -153,7 +153,7 @@ void UI::draw_UI(double time, int points, double last_spawn, double red_spawn, b
 	
 
 	
-	sprintf(text, "Implemented requirements: 1 2 3 4 A B C D");
+	sprintf(text, "Implemented requirements: 1 2 3 4 A B C D E F G H");
 	DrawString(screen, screen->w / 2 - strlen(text) * 8 / 2, 6, text, charset);
 
 	sprintf(text, "Elapsed time = %.1lf s", time);
@@ -161,10 +161,10 @@ void UI::draw_UI(double time, int points, double last_spawn, double red_spawn, b
 
 	sprintf(text, "Points: %d", points);
 	DrawString(screen, screen->w - strlen(text) * 8 -10, 12, text, charset);
-
-	
 	SDL_UpdateTexture(scrtex, NULL, screen->pixels, screen->pitch);
 	SDL_RenderCopy(renderer, scrtex, NULL, NULL);
+	
+	
 }
 
 void UI::congrats_screen() {
@@ -199,7 +199,21 @@ void UI::ranking(ScoreEntry ranking[], int count) {
 	SDL_RenderPresent(renderer);
 }
 
+void UI::Draw_portal_numbers(Portal**portals) {
+	int x, y, number;
+	for (int i = 0; i < TP_NUMBER * 2; i++) {
+		x = portals[i]->getx();
+		y = portals[i]->gety();
+		number = portals[i]->get_portal_nr();
 
+		char number_text[2];
+		snprintf(number_text, sizeof(number_text), "%d", number);
+		y += DOT_SIZE / 2 + 5;
+		DrawString(screen, x, y, number_text, charset);
+		SDL_UpdateTexture(scrtex, NULL, screen->pixels, screen->pitch);
+		SDL_RenderCopy(renderer, scrtex, NULL, NULL);
+	}
+}
 void UI::game_lost_screen() {
 	SDL_FillRect(screen, NULL, black); 
 

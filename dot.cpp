@@ -21,6 +21,10 @@ Dot::Dot(bool blue, SDL_Renderer* renderer):blue(blue),renderer(renderer) {
 
 }
 
+Dot::Dot(SDL_Renderer* renderer): renderer(renderer) {
+	spawn();
+}
+
 void Dot::setTime() {
 	spawn_time = (rand() % (MAX_WAIT_FOR_SPAWN - MIN_WAIT_FOR_SPAWN)) + MIN_WAIT_FOR_SPAWN;
 }
@@ -35,7 +39,7 @@ void Dot::render(Uint32 time){
 	int scaledHeight = static_cast<int>(DOT_SIZE * scale);
 
 	SDL_Rect dstRect = { x - scaledWidth / 2, y - scaledHeight / 2, scaledWidth, scaledHeight };
-	SDL_RenderCopy(renderer, dot_sprite, NULL, &dstRect);
+	SDL_RenderCopy(renderer, dot_sprite, NULL, &dstRect); 
 }
 
 double Dot::getScale() {
@@ -81,9 +85,5 @@ const int Dot::gety() {
 }
 
 Dot::~Dot() {
-
-}
-
-void Dot::pulsate_dot() {
-
+	SDL_DestroyTexture(dot_sprite);
 }

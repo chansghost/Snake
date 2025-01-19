@@ -1,6 +1,8 @@
 #pragma once
 #include "includes.h"
+#include "portals.h"
 #include "score_entry.h"
+
 class UI {
 public:
 	UI();
@@ -21,6 +23,9 @@ public:
 	SDL_Surface* getScreen();
 
 	SDL_Window* getWindow();
+
+	void Draw_portal_numbers(Portal** portals);
+	
 
 private:
 	int black, pink,blue;

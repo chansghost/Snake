@@ -8,7 +8,6 @@ public:
 	Game();
 	~Game();
 
-
 	void start_game();
 	void restart();
 	void game_lost();
@@ -16,11 +15,6 @@ public:
 	void save();
 	void load();
 	void gameplay();
-
-	
-	
-	
-
 private:
 	UI* ui;
 	Snake* snake;
@@ -29,6 +23,7 @@ private:
 	double worldTime=0;
 	Dot* blue_dot=nullptr;
 	Dot* red_dot=nullptr;
+	Portal* portals[TP_NUMBER * 2];
 	double last_spawn = 0;
 	double last_speed_up = 0;
 	ScoreEntry* ranking;
@@ -37,6 +32,9 @@ private:
 
 	void save_snake(FILE* file);
 	void load_snake(FILE* file);
+
+	void save_portals(FILE* file);
+	void load_portals(FILE* file);
 
 	void save_turns(FILE* file);
 	void load_turns(FILE* file);
