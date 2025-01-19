@@ -1,12 +1,12 @@
 #include "UI.h"
 
-UI::UI() {
+UI::UI(int width, int height):width(width),height(height) {
 	if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
 		printf("SDL_Init error: %s\n", SDL_GetError());
 		return;
 	}
 
-	rc = SDL_CreateWindowAndRenderer(SCREEN_WIDTH, SCREEN_HEIGHT, 0,
+	rc = SDL_CreateWindowAndRenderer(width, height, 0,
 		&window, &renderer);
 	if (rc != 0) {
 		SDL_Quit();
@@ -15,18 +15,18 @@ UI::UI() {
 	};
 
 	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
-	SDL_RenderSetLogicalSize(renderer, SCREEN_WIDTH, SCREEN_HEIGHT);
+	SDL_RenderSetLogicalSize(renderer, width, height);
 	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
 
 	SDL_SetWindowTitle(window, "snejk");
 
 
-	screen = SDL_CreateRGBSurface(0, SCREEN_WIDTH, SCREEN_HEIGHT, 32,
+	screen = SDL_CreateRGBSurface(0, width, height, 32,
 		0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000);
 
 	scrtex = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888,
 		SDL_TEXTUREACCESS_STREAMING,
-		SCREEN_WIDTH, SCREEN_HEIGHT);
+		width, height);
 
 
 	// wy³¹czenie widocznoœci kursora myszy
@@ -120,26 +120,26 @@ void UI::DrawRectangle(SDL_Surface* screen, int x, int y, int l, int k,
 };
 
 void UI::draw_Borders(SDL_Surface* screen, Uint32 fillColor) {
-	DrawRectangle(screen, 0, 4, BORDER_LEFT, SCREEN_HEIGHT-4, fillColor, fillColor);
-	DrawRectangle(screen, BORDER_RIGHT, 4, BORDER_LEFT, SCREEN_HEIGHT-4, fillColor, fillColor);
-	DrawRectangle(screen, 0, SCREEN_HEIGHT-BORDER_LEFT, SCREEN_WIDTH, BORDER_LEFT, fillColor, fillColor);
+	DrawRectangle(screen, 0, 4, BORDER_LEFT, height-4, fillColor, fillColor);
+	DrawRectangle(screen, BORDER_RIGHT, 4, BORDER_LEFT, height-4, fillColor, fillColor);
+	DrawRectangle(screen, 0, height-BORDER_LEFT, width, BORDER_LEFT, fillColor, fillColor);
 }
 
-void UI::draw_UI(double time, int points, double last_spawn, double red_spawn, bool spawned) {
+void UI::draw_UI(double time, int points, double last_spawn, double red_spawn, bool spawned,int lifetime) {
 	SDL_FillRect(screen, NULL, black); // Czyszczenie ekranu
-	DrawRectangle(screen, 4, 4, SCREEN_WIDTH - 8, INFO_HEIGHT, pink, pink); // Obszar UI
+	DrawRectangle(screen, 4, 4, width - 8, INFO_HEIGHT, pink, pink); // Obszar UI
 	draw_Borders(screen, pink); // Ramki
 
 	double progress = 0.0; // Proporcja czasu
 
 	if (spawned){
 		// Jeœli obiekt jest zespawnowany, pokazuje czas ¿ycia
-		progress = (RED_LIFETIME - last_spawn) / RED_LIFETIME;
+		progress = (lifetime - last_spawn) / lifetime;
 		if (progress < 0) progress = 0;
 		if (progress > 1) progress = 1;
 
 		// Szerokoœæ paska
-		int max_width = SCREEN_WIDTH / 3;
+		int max_width = width / 3;
 		int bar_width = static_cast<int>(progress * max_width);
 
 		// Wyœrodkowanie paska
@@ -167,13 +167,58 @@ void UI::draw_UI(double time, int points, double last_spawn, double red_spawn, b
 	
 }
 
-void UI::congrats_screen() {
+char* UI::congrats_screen() {
 	SDL_FillRect(screen, NULL, black);
 	sprintf(text,"Congratulations! You've made it to the top 3. Please enter your name on the terminal.");
-	DrawString(screen, SCREEN_WIDTH / 2 - strlen(text) * 16 / 2, SCREEN_HEIGHT / 3, text, charset);
+	DrawString(screen, width / 2 - strlen(text) * 16 / 2, height / 3, text, charset);
 	SDL_UpdateTexture(scrtex, NULL, screen->pixels, screen->pitch);
 	SDL_RenderCopy(renderer, scrtex, NULL, NULL);
 	SDL_RenderPresent(renderer);
+
+	char name[50] = "";  
+	int cursor_pos = 0;  
+
+	SDL_StartTextInput();  
+
+	bool running = true;
+	while (running) {
+		SDL_Event event;
+		while (SDL_PollEvent(&event)) {
+			if (event.type == SDL_QUIT) {
+				running = false;
+			}
+			else if (event.type == SDL_TEXTINPUT) {
+				
+				if (cursor_pos < 49) {
+					strcat(name, event.text.text);
+					cursor_pos++;
+				}
+			}
+			else if (event.type == SDL_KEYDOWN) {
+				if (event.key.keysym.sym == SDLK_BACKSPACE && cursor_pos > 0) {//if user made a typo
+					
+					name[--cursor_pos] = '\0';
+				}
+				else if (event.key.keysym.sym == SDLK_RETURN) {
+					
+					running = false;
+				}
+			}
+		}
+
+		
+		SDL_FillRect(screen, NULL, black);
+		DrawString(screen, width / 2 - strlen(text) * 16 / 2, height / 3, text, charset);
+		DrawString(screen, width / 2 - strlen(name) * 16 / 2, height / 2, name, charset);
+		SDL_UpdateTexture(scrtex, NULL, screen->pixels, screen->pitch);
+		SDL_RenderCopy(renderer, scrtex, NULL, NULL);
+		SDL_RenderPresent(renderer);
+	}
+
+	SDL_StopTextInput();  
+
+	printf("Name entered: %s\n", name);
+	return name;
 }
 
 
@@ -218,11 +263,11 @@ void UI::game_lost_screen() {
 	SDL_FillRect(screen, NULL, black); 
 
 	sprintf(text, "YOU LOST");
-	DrawString(screen, SCREEN_WIDTH / 2 - strlen(text) * 16 / 2, SCREEN_HEIGHT / 3, text, charset);
+	DrawString(screen, width / 2 - strlen(text) * 16 / 2, height / 3, text, charset);
 
 	
 	sprintf(text, "Press N to start a new game");
-	DrawString(screen, SCREEN_WIDTH / 2 - strlen(text) * 8 / 2, SCREEN_HEIGHT / 2, text, charset);
+	DrawString(screen, width / 2 - strlen(text) * 8 / 2, height / 2, text, charset);
 	SDL_UpdateTexture(scrtex, NULL, screen->pixels, screen->pitch);
 	SDL_RenderCopy(renderer, scrtex, NULL, NULL);
 	SDL_RenderPresent(renderer);

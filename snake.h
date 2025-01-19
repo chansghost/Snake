@@ -9,19 +9,19 @@
 
 class Snake {
 public:
-	Snake(int part_size, SDL_Renderer* renderer);
+	Snake(int part_size, SDL_Renderer* renderer,double speed,int width,int height,int length,double slowdown,double speedup);
 	~Snake();
 	void render();
 
 	int detect_self_collision();
 
-	void check_for_dots(Dot*blue,Dot*red, Portal** portals);
+	int check_for_dots(Dot*blue,Dot*red, Portal** portals);
 
 	void handle_direction(int dir);
 
-	void speedup();
+	void speed_up();
 
-	void slowdown();
+	void slow_down();
 
 	SDL_Texture* getHeadSprite();
 	SDL_Texture* getTailSprite();
@@ -74,8 +74,8 @@ private:
 	void even();
 	void move_part(SnakePart* part);
 	void move_snake(Turn_coords ** new_coords_head,bool tp);
-
-	
+	int length;
+	double slowdown, speedup;
 	
 	void addPart();
 	void update_tail();

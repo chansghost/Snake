@@ -1,7 +1,8 @@
 #include "snake.h"
 #include <iostream>
 
-Snake::Snake(int part_size, SDL_Renderer* renderer) : part_size(part_size), renderer(renderer){
+Snake::Snake(int part_size, SDL_Renderer* renderer,double speed,int width,int height,int length,double slowdown, double speedup) : 
+	part_size(part_size), renderer(renderer), speed(speed), length(length), slowdown(slowdown),speedup(speedup){
 	SDL_Surface* temp_head = SDL_LoadBMP("./head_up.bmp");
 	SDL_Surface* temp_tail = SDL_LoadBMP("./tail_up.bmp");
 	
@@ -15,16 +16,16 @@ Snake::Snake(int part_size, SDL_Renderer* renderer) : part_size(part_size), rend
 	SDL_FreeSurface(temp_head);
 	SDL_FreeSurface(temp_tail);
 	
-	head = new SnakePart(SCREEN_WIDTH/2, SCREEN_HEIGHT / 2,0,0, headsprite);
+	head = new SnakePart(width/2, height / 2,0,0, headsprite);
 	head->setNumber(0);
 	
-	tail = new SnakePart(SCREEN_WIDTH / 2, part_size+(SCREEN_HEIGHT / 2), 0,0, tailsprite);
+	tail = new SnakePart(width / 2, part_size+(height / 2), 0,0, tailsprite);
 	
 	head->setNext(tail);
 	tail->setPrev(head);
 	tail->setNumber(1);
 
-	for (int i = 0; i < DEFAULT_BODY_LENGTH; i++) {
+	for (int i = 0; i < length; i++) {
 		addPart();
 	}
 }
@@ -78,7 +79,7 @@ void Snake::addPart() {
 void Snake::removePart() {
 	
 	SnakePart* temp = tail->getPrev();
-	if (temp->getNumber() > DEFAULT_BODY_LENGTH) {
+	if (temp->getNumber() > length) {
 
 		update_remaining(REMOVE);
 		SnakePart* new_behind = temp->getPrev();
@@ -371,22 +372,22 @@ int Snake::getPoints() {
 	return points;
 }
 
-void Snake::speedup() {
+void Snake::speed_up() {
 	if (head_node_turn != nullptr) {
-		pending_speed = speed*SPEED_UP;
+		pending_speed = speed*speedup;
 	}
 	else {
-		speed = speed*SPEED_UP;
+		speed = speed*speedup;
 	}
 	printf("Snake has sped up!\n");
 }
 
-void Snake::slowdown() {
+void Snake::slow_down() {
 	if (head_node_turn != nullptr) {
-		pending_speed = speed * SLOW_DOWN;
+		pending_speed = speed * slowdown;
 	}
 	else {
-		speed = speed * SLOW_DOWN;
+		speed = speed * slowdown;
 	}
 	printf("Snake has slowed down!\n");
 }
@@ -400,7 +401,7 @@ void Snake::teleport_head() {
 	head->setY(y);
 }
 
-void Snake::check_for_dots(Dot* blue, Dot* red,Portal** portals) {
+int Snake::check_for_dots(Dot* blue, Dot* red,Portal** portals) {
 	int x = blue->getx();
 	int y = blue->gety();
 	int random;
@@ -410,7 +411,7 @@ void Snake::check_for_dots(Dot* blue, Dot* red,Portal** portals) {
 		update_remaining(ADD);
 		printf("New segment added!\n");
 		points += BLUE_POINTS;
-		return;
+		return BLUE;
 	}
 	if (red->getSpawned()) {
 		x = red->getx();
@@ -428,9 +429,9 @@ void Snake::check_for_dots(Dot* blue, Dot* red,Portal** portals) {
 			}
 			else {
 
-				slowdown();
+				slow_down();
 			}
-			points += RED_POINTS;
+			return RED;
 		}
 	}
 	for (int i = 0; i < TP_NUMBER*2; i++) {
@@ -464,7 +465,7 @@ void Snake::check_for_dots(Dot* blue, Dot* red,Portal** portals) {
 			teleport_head();
 			portals[i]->spawn();
 			second_port->spawn();
-
+			return PORTAL;
 			
 		}
 	}

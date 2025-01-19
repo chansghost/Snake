@@ -15,6 +15,8 @@ public:
 	void save();
 	void load();
 	void gameplay();
+
+
 private:
 	UI* ui;
 	Snake* snake;
@@ -28,6 +30,19 @@ private:
 	double last_speed_up = 0;
 	ScoreEntry* ranking;
 	int count = 0;
+
+	double speed;
+	int length;
+	int bonus_lifetime;
+	int red_points;
+	int blue_points;
+	double speed_up_value;
+	double slow_down_value;
+	int screen_width;
+	int screen_height;
+
+	int points;
+
 	void loadRanking(const char* filename, ScoreEntry* ranking, int& count);
 
 	void save_snake(FILE* file);
@@ -47,4 +62,9 @@ private:
 	int key_management();
 
 	void red_dot_management();
+
+	void addPoints(int type);
+
+	//config values
+	
 };

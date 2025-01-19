@@ -5,16 +5,16 @@
 
 class UI {
 public:
-	UI();
+	UI(int width,int height);
 	~UI();
 	
 
 	void draw_Borders(SDL_Surface* screen, Uint32 fillColor);
-	void draw_UI(double time, int Points, double last_spawn, double red_spawn,bool spawned);
+	void draw_UI(double time, int Points, double last_spawn, double red_spawn,bool spawned,int lifetime);
 
 	void game_lost_screen();
 
-	void congrats_screen();
+	char* congrats_screen();
 
 	
 	void ranking(ScoreEntry ranking[],int count);
@@ -45,6 +45,6 @@ private:
 	void DrawLine(SDL_Surface* screen, int x, int y, int l, int dx, int dy, Uint32 color);
 	void DrawRectangle(SDL_Surface* screen, int x, int y, int l, int k,
 		Uint32 outlineColor, Uint32 fillColor);
-
+	int width, height;
 
 };

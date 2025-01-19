@@ -12,6 +12,7 @@
 
 #define BLUE 1
 #define RED 0
+#define PORTAL 2
 
 #define DOT_SIZE 20
 

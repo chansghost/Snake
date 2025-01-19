@@ -1,15 +1,35 @@
 #include "game.h"
 
 Game::Game() {
+	FILE* file = fopen("game_config.txt", "r");
+
+	if (!file) {
+		perror("could not open game_config.");
+		return;
+	}
+
+	fscanf(file, "%lf", &speed);
+	fscanf(file, "%d", &length);
+	fscanf(file, "%d", &bonus_lifetime);
+	fscanf(file, "%d", &red_points);
+	fscanf(file, "%d", &blue_points);
+	fscanf(file, "%lf", &speed_up_value);
+	fscanf(file, "%lf", &slow_down_value);
+	fscanf(file, "%d", &screen_width);
+	fscanf(file, "%d", &screen_height);
+	fclose(file);
+		
+	
+
 	
 }
 
 void Game::start_game() {
 	
-	ui = new UI();
+	ui = new UI(screen_width,screen_height);
 	blue_dot = new Dot(BLUE, ui->getRenderer());
 	red_dot = new Dot(RED, ui->getRenderer());
-	snake = new Snake(SNAKE_SIZE, ui->getRenderer());
+	snake = new Snake(SNAKE_SIZE, ui->getRenderer(),speed,screen_width,screen_height,length,slow_down_value,speed_up_value);
 	Portal* portal;
 	int p_number=1;
 	for (int i = 0; i < TP_NUMBER*2; i++) {
@@ -33,7 +53,7 @@ void Game::gameplay() {
 		last_spawn += delta;
 		worldTime += delta;
 
-		ui->draw_UI(worldTime, snake->getPoints(), last_spawn, red_dot->getTime(), red_dot->getSpawned());
+		ui->draw_UI(worldTime, snake->getPoints(), last_spawn, red_dot->getTime(), red_dot->getSpawned(),bonus_lifetime);
 
 		ui->Draw_portal_numbers(portals);
 		for (int i = 0; i < TP_NUMBER * 2; i++) {
@@ -48,7 +68,7 @@ void Game::gameplay() {
 		
 		
 		SDL_RenderPresent(ui->getRenderer());
-		snake->check_for_dots(blue_dot, red_dot, portals);
+		addPoints(snake->check_for_dots(blue_dot, red_dot, portals));
 
 		snake->update();
 		game_state = key_management();
@@ -57,7 +77,7 @@ void Game::gameplay() {
 			game_state = snake->detect_self_collision();
 		}
 		if (last_speed_up > SPEED_UP_TIME) {
-			snake->speedup();
+			snake->speed_up();
 			last_speed_up = 0;
 		}
 	};
@@ -118,7 +138,7 @@ void Game::red_dot_management() {
 		red_dot->render(SDL_GetTicks());
 
 
-		if (last_spawn >= RED_LIFETIME) {
+		if (last_spawn >= bonus_lifetime) {
 
 			red_dot->setSpawned(false);
 			last_spawn = 0;
@@ -311,7 +331,7 @@ void Game::load_snake(FILE* file) {
 	int count = 0;
 	fread(&count, sizeof(count), 1, file);
 
-	snake = new Snake(SNAKE_SIZE, ui->getRenderer());
+	snake = new Snake(SNAKE_SIZE, ui->getRenderer(),speed,screen_width,screen_height,length,slow_down_value,speed_up_value);
 
 	SnakePart* current = nullptr;
 	SnakePart* prev = nullptr;
@@ -446,10 +466,10 @@ void Game::updateRanking(int playerScore) {
 	}
 
 	if (count < 3 || playerScore > ranking[minIndex].score) {
-		char playerName[50];
-		ui->congrats_screen();
-		std::cout << "Please enter your name: ";
-		std::cin >> playerName;
+		
+		char playerName[50];  
+		strcpy(playerName, ui->congrats_screen());
+		
 
 		if (count < 3) {
 			//add anyway if there's less than 3 players
@@ -513,7 +533,7 @@ void Game::load() {
 		delete temp_portal;
 		portals[i] = nullptr;
 	}
-	ui = new UI();
+	ui = new UI(screen_width,screen_height);
 	
 
 	
@@ -529,6 +549,15 @@ void Game::load() {
 
 	fclose(file);
 	printf("Game loaded successfully.\n");
+}
+
+void Game::addPoints(int type) {
+	if (type == RED) {
+		points += red_points;
+	}
+	else if (type == BLUE) {
+		points += blue_points;
+	}
 }
 
 Game::~Game() {
